@@ -1,0 +1,11 @@
+{
+  "_path": "CYRENE — the assistant. Helpfulness-tuned: accurate, calmer, longer answers, more memory. Copy this to config.json to use it.",
+  "llm_provider": "ollama",
+  "ollama_model": "qwen2.5:7b-instruct",
+  "ollama_num_ctx": 8192,
+  "ollama_keep_alive": "30m",
+  "persona_path": "persona/cyrene.json",
+  "temperature": 0.4,
+  "max_tokens": 800,
+  "max_turns": 20
+}

@@ -1,0 +1,10 @@
+# Stage 1 core has NO third-party dependencies — it talks to Ollama over HTTP
+# using only the Python standard library. You just need Python 3.10+ and Ollama.
+
+# Dev / testing:
+pytest>=7.0
+
+# --- Stage 2+ (uncomment when you get there) ---
+# TTS (voice out): TTS            # Coqui XTTSv2, supports EN + ZH
+# STT (ears):      faster-whisper # or reuse Conference's ASR stack
+# Memory (Stage 4): sentence-transformers, faiss-cpu  # or reuse Conference's semantic/

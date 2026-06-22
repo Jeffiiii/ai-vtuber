@@ -1,0 +1,11 @@
+{
+  "_path": "ELYSIA — the VTuber. Entertainment-tuned: lively, short, punchy replies. Copy this to config.json to use it.",
+  "llm_provider": "ollama",
+  "ollama_model": "qwen2.5:7b-instruct",
+  "ollama_num_ctx": 4096,
+  "ollama_keep_alive": "30m",
+  "persona_path": "persona/elysia.json",
+  "temperature": 0.92,
+  "max_tokens": 200,
+  "max_turns": 12
+}

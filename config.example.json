@@ -1,0 +1,15 @@
+{
+  "llm_provider": "ollama",
+  "ollama_model": "qwen2.5:7b-instruct",
+  "ollama_num_ctx": 4096,
+  "ollama_keep_alive": "30m",
+  "persona_path": "persona/default.json",
+  "temperature": 0.85,
+  "max_tokens": 400,
+  "max_turns": 12,
+
+  "_notes": {
+    "model_choice": "qwen2.5:7b-instruct is bilingual (EN/ZH) and fits an 8GB RTX 4060. Alternatives: qwen2.5:3b-instruct (faster, lighter), llama3.1:8b (great EN, weaker ZH).",
+    "usage": "Copy this file to config.json and edit. config.json is gitignored."
+  }
+}
