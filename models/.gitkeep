@@ -1,0 +1,2 @@
+# Put your GGUF model files here (e.g. elysia-q4_k_m.gguf).
+# GGUF files are large and git-ignored; this folder is kept so the Modelfile path resolves.

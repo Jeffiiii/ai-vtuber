@@ -1,0 +1,20 @@
+# ===========================================================================
+# ai-vtuber — Stage 2 voice extras (TTS + STT)
+# ===========================================================================
+# Install when you start the voice stage:  pip install -r requirements-voice.txt
+# (In China, your TUNA pip mirror covers all of these.)
+# The text app does NOT need any of this.
+# ===========================================================================
+
+# --- TTS (voice out) ---
+edge-tts>=6.1            # free, online, bilingual EN/ZH — the easy default
+playsound==1.2.2         # plays the mp3/wav output (1.2.2 is the stable release)
+
+# --- STT (the ears) — needed for `voice_cli --listen` ---
+faster-whisper>=1.0
+sounddevice>=0.4.6       # microphone capture
+soundfile>=0.12          # write WAV for the recognizer
+numpy>=1.26
+
+# --- Local voice cloning (optional, instead of edge-tts) ---
+# TTS>=0.22              # Coqui XTTS v2 — local, clones a voice from a sample clip

@@ -1,5 +1,6 @@
 """Tests that run WITHOUT Ollama (provider is faked)."""
 
+import json
 import sys
 from pathlib import Path
 
@@ -10,7 +11,22 @@ from aivtuber.llm.base import LLMProvider             # noqa: E402
 from aivtuber.memory import ShortTermMemory           # noqa: E402
 from aivtuber.persona import Persona                  # noqa: E402
 
-PERSONA_PATH = Path(__file__).resolve().parent.parent / "persona" / "default.json"
+# Use any persona that ships in the repo; pick the first that actually opens so the
+# suite doesn't break when persona files are added/removed.
+_PERSONA_DIR = Path(__file__).resolve().parent.parent / "persona"
+
+
+def _first_readable_persona():
+    for name in ("elysia.json", "cyrene.json", "default.json"):
+        try:
+            data = json.loads((_PERSONA_DIR / name).read_text(encoding="utf-8"))
+            return _PERSONA_DIR / name, data["name"]
+        except (FileNotFoundError, OSError, KeyError, json.JSONDecodeError):
+            continue
+    raise FileNotFoundError(f"No readable persona JSON in {_PERSONA_DIR}")
+
+
+PERSONA_PATH, PERSONA_NAME = _first_readable_persona()
 
 
 class FakeProvider(LLMProvider):
@@ -40,8 +56,8 @@ class FakeProvider(LLMProvider):
 def test_persona_loads_and_builds_prompt():
     p = Persona.load(PERSONA_PATH)
     sp = p.system_prompt()
-    assert p.name == "Aria"
-    assert "Aria" in sp
+    assert p.name == PERSONA_NAME
+    assert PERSONA_NAME in sp
     # bilingual rule must be present so the model replies in the user's language
     assert "中文" in sp or "Chinese" in sp
     assert "Boundaries" in sp

@@ -1,10 +1,28 @@
-# Stage 1 core has NO third-party dependencies — it talks to Ollama over HTTP
-# using only the Python standard library. You just need Python 3.10+ and Ollama.
+# ===========================================================================
+# ai-vtuber — runtime requirements
+# ===========================================================================
+# Stage 1 (the text brain) has NO third-party runtime dependencies: it talks to
+# Ollama over HTTP using only the Python standard library. You just need
+# Python 3.10+ and Ollama installed (https://ollama.com).
+#
+# So for the core app, this file installs nothing but the dev/test tools.
+# Optional sections below are for later stages — uncomment as you reach them.
+# For the GPU fine-tuning / eval stack, use the separate requirements-train.txt.
+# ===========================================================================
 
-# Dev / testing:
-pytest>=7.0
+# --- Dev / testing (Stage 1) ---
+pytest>=7.4
 
-# --- Stage 2+ (uncomment when you get there) ---
-# TTS (voice out): TTS            # Coqui XTTSv2, supports EN + ZH
-# STT (ears):      faster-whisper # or reuse Conference's ASR stack
-# Memory (Stage 4): sentence-transformers, faiss-cpu  # or reuse Conference's semantic/
+# --- Stage 2: voice (uncomment when you start TTS/STT) ---
+# TTS>=0.22.0              # Coqui XTTS v2 — bilingual EN/ZH, voice cloning
+# faster-whisper>=1.0.0    # STT "ears" (or reuse the Conference ASR stack)
+# sounddevice>=0.4.6       # mic capture / audio playback
+# numpy>=1.26              # audio buffers
+
+# --- Stage 3: streaming / chat ingestion (uncomment when you go live) ---
+# twitchio>=2.8            # Twitch chat
+# obsws-python>=1.6        # control OBS scenes/sources from code
+
+# --- Stage 4: long-term memory (uncomment when you add RAG) ---
+# sentence-transformers>=3.0   # embeddings  (or reuse Conference/semantic/)
+# faiss-cpu>=1.8               # vector store

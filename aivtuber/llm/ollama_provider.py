@@ -34,9 +34,10 @@ _NO_PROXY = urllib.request.build_opener(urllib.request.ProxyHandler({}))
 
 class OllamaProvider(LLMProvider):
     def __init__(self, base_url: str = "http://127.0.0.1:11434",
-                 model: str = "llama3.1:8b", timeout: int = 300,
+                 model: str = "qwen3:8b", timeout: int = 300,
                  num_ctx: int = 4096, keep_alive: str = "30m",
-                 auto_start: bool = True, auto_pull: bool = True):
+                 auto_start: bool = True, auto_pull: bool = True,
+                 think: bool = False):
         base_url = (base_url or "http://127.0.0.1:11434").rstrip("/")
         self._base_url = base_url.replace("://localhost:", "://127.0.0.1:")
         self._model = model
@@ -45,6 +46,10 @@ class OllamaProvider(LLMProvider):
         self._keep_alive = keep_alive
         self._auto_start = auto_start
         self._auto_pull = auto_pull
+        # Qwen3 (and other hybrid models) reason in a <think> phase by default, which
+        # adds latency and meta-text — bad for snappy VTuber banter. Default OFF.
+        # Ollama ignores this field for models that don't support thinking.
+        self._think = think
         self._ready = False
 
     # ------------------------------------------------------------------ HTTP
@@ -138,6 +143,7 @@ class OllamaProvider(LLMProvider):
             "messages": messages,
             "stream": stream,
             "keep_alive": self._keep_alive,
+            "think": self._think,   # False => no <think> phase (snappy replies)
             "options": {
                 "temperature": temperature,
                 "num_predict": max_tokens,

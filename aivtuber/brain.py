@@ -16,14 +16,19 @@ from .persona import Persona
 class Brain:
     def __init__(self, provider: LLMProvider, persona: Persona,
                  memory: ShortTermMemory | None = None,
-                 temperature: float = 0.85, max_tokens: int = 400):
+                 temperature: float = 0.85, max_tokens: int = 400,
+                 max_examples: int = 8):
         self.provider = provider
         self.persona = persona
         self.memory = memory or ShortTermMemory()
         self.temperature = temperature
         self.max_tokens = max_tokens
+        self.max_examples = max_examples
         self._system = persona.system_prompt()
-        self._examples = persona.example_messages()
+        # Inject only a small, varied sample of the (possibly large) example set —
+        # enough to prime the voice without flooding the context window. Sampled once
+        # per session for consistency; the full set is best used as fine-tuning data.
+        self._examples = persona.example_messages(limit=max_examples, shuffle=True)
 
     def _build_messages(self, user_text: str) -> list[dict]:
         msgs = [{"role": "system", "content": self._system}]

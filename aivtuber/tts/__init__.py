@@ -1,7 +1,10 @@
-"""Text-to-speech (Stage 2). Not implemented yet — interface stub only.
+"""Text-to-speech (Stage 2 — the voice).
 
-Plan: a `TTSBackend` ABC with `speak(text) -> audio` / `stream_speak(text)`, with
-backends for Coqui XTTSv2 (local, free, supports Chinese & English) and a cloud
-option (ElevenLabs / Azure). Route output through a virtual audio cable so the
-Live2D avatar can lip-sync in Stage 3.
+Backends: edge-tts (free, online, EN/ZH) and Coqui XTTS v2 (local, voice-cloning).
+Route output through a virtual audio cable later so a Live2D avatar can lip-sync.
 """
+
+from .base import TTSBackend, detect_lang
+from .factory import create_tts
+
+__all__ = ["TTSBackend", "detect_lang", "create_tts"]

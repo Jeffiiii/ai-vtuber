@@ -1,0 +1,14 @@
+# ===========================================================================
+# ai-vtuber — Stage 3 live extras (chat + avatar)
+# ===========================================================================
+# Install when you go live:  pip install -r requirements-stream.txt
+# The console chat source and the null avatar need NONE of this — you can test the
+# whole live loop first with: python -m aivtuber.live
+# ===========================================================================
+
+# --- Chat ingestion ---
+twitchio>=2.8           # Twitch chat (needs an OAuth chat token in config)
+# youtube + bilibili sources can be added later behind the same ChatSource interface
+
+# --- Avatar control ---
+websocket-client>=1.7   # talks to VTube Studio's plugin API (ws://localhost:8001)

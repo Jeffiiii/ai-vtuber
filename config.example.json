@@ -1,15 +1,18 @@
 {
   "llm_provider": "ollama",
-  "ollama_model": "qwen2.5:7b-instruct",
+  "ollama_model": "qwen3:8b",
+  "ollama_think": false,
   "ollama_num_ctx": 4096,
   "ollama_keep_alive": "30m",
-  "persona_path": "persona/default.json",
+  "persona_path": "persona/elysia.json",
   "temperature": 0.85,
   "max_tokens": 400,
   "max_turns": 12,
+  "max_examples": 8,
 
   "_notes": {
-    "model_choice": "qwen2.5:7b-instruct is bilingual (EN/ZH) and fits an 8GB RTX 4060. Alternatives: qwen2.5:3b-instruct (faster, lighter), llama3.1:8b (great EN, weaker ZH).",
-    "usage": "Copy this file to config.json and edit. config.json is gitignored."
+    "model_choice": "qwen3:8b is bilingual (EN/ZH), strong at roleplay, and fits an 8GB RTX 4060 (~6GB). Alternatives: qwen3:4b (faster/lighter, lots of headroom). Older fallback: qwen2.5:7b-instruct.",
+    "thinking": "ollama_think:false disables Qwen3's <think> reasoning phase for snappy, low-latency VTuber replies. Set true only if you want it to reason before answering.",
+    "usage": "Copy this file to config.json and edit. config.json is gitignored. For Elysia, copy config.elysia.json instead."
   }
 }

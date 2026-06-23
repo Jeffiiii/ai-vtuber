@@ -20,12 +20,13 @@ def create_provider(config: dict) -> LLMProvider:
         from .ollama_provider import OllamaProvider
         return OllamaProvider(
             base_url=config.get("ollama_base_url", "http://127.0.0.1:11434"),
-            model=config.get("ollama_model", "qwen2.5:7b-instruct"),
+            model=config.get("ollama_model", "qwen3:8b"),
             timeout=int(config.get("ollama_timeout_s", 300)),
             num_ctx=int(config.get("ollama_num_ctx", 4096)),
             keep_alive=config.get("ollama_keep_alive", "30m"),
             auto_start=bool(config.get("ollama_auto_start", True)),
             auto_pull=bool(config.get("ollama_auto_pull", True)),
+            think=bool(config.get("ollama_think", False)),
         )
 
     # Placeholder for future cloud providers — wire up like Conference's DeepSeek.

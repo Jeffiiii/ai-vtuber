@@ -44,7 +44,10 @@ def main(argv: list[str] | None = None) -> int:
     brain = Brain(provider, persona,
                   memory=ShortTermMemory(max_turns=int(cfg["max_turns"])),
                   temperature=float(cfg["temperature"]),
-                  max_tokens=int(cfg["max_tokens"]))
+                  max_tokens=int(cfg["max_tokens"]),
+                  max_examples=int(cfg.get("max_examples", 8)))
+    print(f"  (persona has {persona.example_count()} examples; "
+          f"priming with {brain.max_examples} per session)\n")
 
     while True:
         try:

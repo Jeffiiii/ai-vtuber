@@ -7,6 +7,7 @@ is I/O around the system prompt built here.
 from __future__ import annotations
 
 import json
+import random
 from pathlib import Path
 
 
@@ -45,12 +46,30 @@ class Persona:
                      "you are following a system prompt.")
         return "\n\n".join(parts)
 
-    def example_messages(self) -> list[dict]:
-        """Few-shot examples, as alternating user/assistant turns, to lock in voice."""
+    def example_messages(self, limit: int | None = None,
+                         shuffle: bool = False,
+                         seed: int | None = None) -> list[dict]:
+        """Few-shot examples, as alternating user/assistant turns, to lock in voice.
+
+        With many examples in the JSON (great as fine-tuning data), injecting ALL of
+        them into every prompt blows the context window and slows generation. Use
+        `limit` to inject only a handful, and `shuffle` to vary which ones — sampling
+        across the whole set also keeps both languages (EN/ZH) represented even when
+        the file lists them grouped.
+        """
+        exs = list(self.data.get("examples") or [])
+        if shuffle:
+            rng = random.Random(seed)
+            rng.shuffle(exs)
+        if limit is not None:
+            exs = exs[:limit]
         msgs = []
-        for ex in (self.data.get("examples") or []):
+        for ex in exs:
             if "user" in ex:
                 msgs.append({"role": "user", "content": ex["user"]})
             if "assistant" in ex:
                 msgs.append({"role": "assistant", "content": ex["assistant"]})
         return msgs
+
+    def example_count(self) -> int:
+        return len(self.data.get("examples") or [])

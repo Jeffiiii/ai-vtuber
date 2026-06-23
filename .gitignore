@@ -14,3 +14,12 @@ venv/
 memory_store/
 recordings/
 output/
+.vts_token
+
+# Training / serving artifacts
+posttrain_results/
+.venv-train/
+# large model weights (keep the folder via .gitkeep)
+models/*.gguf
+*.safetensors
+*.bin
