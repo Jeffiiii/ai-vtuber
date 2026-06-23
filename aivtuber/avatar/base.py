@@ -1,7 +1,8 @@
 """Avatar control interface (Stage 3).
 
-Drives a Live2D avatar's expressions in response to Elysia's emotion. The default
-implementation talks to VTube Studio's plugin API over websocket.
+Drives an avatar's expressions + mouth in response to Elysia. Implementations:
+NullAvatar (prints), VTubeStudioAvatar (real Live2D via plugin API), WebAvatar
+(built-in lip-sync face you can drop into OBS as a browser source).
 """
 
 from __future__ import annotations
@@ -12,16 +13,22 @@ from abc import ABC, abstractmethod
 class AvatarController(ABC):
     @abstractmethod
     def connect(self) -> tuple[bool, str]:
-        """Establish the connection / authenticate. (ok, message)."""
         ...
 
     @abstractmethod
     def set_emotion(self, emotion: str) -> None:
-        """Trigger the expression matching an emotion label (best-effort)."""
+        ...
+
+    # Mouth control — called by the loop around speech. Default no-ops so existing
+    # backends keep working.
+    def speak_start(self) -> None:
+        ...
+
+    def speak_end(self) -> None:
         ...
 
     def close(self) -> None:
-        """Optional cleanup."""
+        ...
 
     @property
     @abstractmethod
@@ -29,11 +36,10 @@ class AvatarController(ABC):
 
 
 class NullAvatar(AvatarController):
-    """No-op avatar — prints the emotion. Lets the live loop run with no VTube
-    Studio attached (handy for testing voice + chat first)."""
+    """No-op avatar — prints the emotion. Lets the loop run with no avatar attached."""
 
     def connect(self) -> tuple[bool, str]:
-        return True, "null avatar (no VTube Studio; emotions printed only)"
+        return True, "null avatar (no display; emotions printed only)"
 
     def set_emotion(self, emotion: str) -> None:
         print(f"[avatar] emotion -> {emotion}")

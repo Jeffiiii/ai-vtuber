@@ -19,4 +19,8 @@ def create_chat_source(config: dict) -> ChatSource:
             channel=config.get("twitch_channel", ""),
         )
 
-    raise ValueError(f"Unknown chat_source: {name!r}. Use 'console' or 'twitch'.")
+    if name in ("bilibili", "bili"):
+        from .bilibili_source import BilibiliChatSource
+        return BilibiliChatSource(room_id=config.get("bilibili_room_id", 0))
+
+    raise ValueError(f"Unknown chat_source: {name!r}. Use 'console', 'twitch', or 'bilibili'.")

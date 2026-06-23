@@ -29,6 +29,13 @@ def create_provider(config: dict) -> LLMProvider:
             think=bool(config.get("ollama_think", False)),
         )
 
+    if name in ("local_http", "local-http", "http", "server"):
+        from .http_provider import LocalHTTPProvider
+        return LocalHTTPProvider(
+            url=config.get("local_http_url", "http://127.0.0.1:8000"),
+            timeout=int(config.get("local_http_timeout_s", 300)),
+        )
+
     # Placeholder for future cloud providers — wire up like Conference's DeepSeek.
     raise ValueError(f"Unknown or not-yet-implemented LLM provider: {name!r}. "
-                     f"Use 'ollama' for now.")
+                     f"Use 'ollama' or 'local_http'.")

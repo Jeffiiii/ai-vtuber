@@ -1,14 +1,24 @@
 # ===========================================================================
-# ai-vtuber — Stage 3 live extras (chat + avatar)
+# ai-vtuber — Stage 3/4 live extras (chat + avatar + senses + hands)
 # ===========================================================================
 # Install when you go live:  pip install -r requirements-stream.txt
-# The console chat source and the null avatar need NONE of this — you can test the
-# whole live loop first with: python -m aivtuber.live
+# The console chat source, the web/null avatar, the built-in games, and moderation
+# need NONE of this — you can test the whole orchestrator first with:
+#   python -m aivtuber.orchestrator --no-voice
+# (the built-in web avatar uses only the standard library.)
 # ===========================================================================
 
 # --- Chat ingestion ---
-twitchio>=2.8           # Twitch chat (needs an OAuth chat token in config)
-# youtube + bilibili sources can be added later behind the same ChatSource interface
+twitchio>=2.8                 # Twitch chat (needs an OAuth chat token)
+bilibili-api-python>=16.0     # Bilibili live danmaku (set bilibili_room_id)
 
 # --- Avatar control ---
-websocket-client>=1.7   # talks to VTube Studio's plugin API (ws://localhost:8001)
+websocket-client>=1.7         # VTube Studio plugin API (ws://localhost:8001)
+
+# --- Vision (senses): read on-screen text ---
+mss>=9.0                      # fast screen capture
+pytesseract>=0.3.10           # OCR wrapper (needs the Tesseract binary installed too)
+pillow>=10.0
+
+# --- External game agent (hands): press keys ---
+pyautogui>=0.9.54             # keyboard/mouse control (keep game_dry_run=true until trusted)

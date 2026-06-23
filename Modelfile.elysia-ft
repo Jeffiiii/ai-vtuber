@@ -1,14 +1,6 @@
-# Ollama Modelfile for the FINE-TUNED Elysia (after merge -> GGUF).
-# Build:   ollama create elysia-ft -f Modelfile.elysia-ft
-# Then in config.elysia.json set:  "ollama_model": "elysia-ft"
-#
-# Update the FROM path to your quantized GGUF (see TRAINING_GUIDE.md Step 10).
-
-FROM ./models/elysia-q4_k_m.gguf
-
+# Modelfile.elysia-ft
+# IMPORTANT: FROM must be a Qwen3 GGUF (Ollama can't convert Qwen3 safetensors).
+# Convert with llama.cpp first (see below), then create with --quantize.
+FROM ./models/elysia-f16.gguf
 PARAMETER temperature 0.92
-PARAMETER num_ctx 4096
-PARAMETER repeat_penalty 1.15
-
-# The personality now lives in the weights, so this prompt can be short.
-SYSTEM """You are Elysia, the warm, playful 'Miss Pink Elf' AI VTuber. Reply in the same language as the viewer (English or 中文). Keep replies short, graceful, and spoken. Stay in character."""
+SYSTEM """You are Elysia, the warm, playful Miss Pink Elf VTuber. Reply in the same language as the viewer. Keep replies short and graceful."""

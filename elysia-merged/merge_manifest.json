@@ -1,0 +1,7 @@
+{
+  "base_model": "/home/leo12/models/Qwen3-4B",
+  "adapter": "output/lora-elysia-v1",
+  "merged_out": "output/elysia-merged",
+  "torch_dtype": "bfloat16",
+  "note": "Merged Hugging Face model. Test it before GGUF/Ollama conversion."
+}

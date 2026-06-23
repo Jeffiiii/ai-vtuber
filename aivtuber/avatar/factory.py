@@ -11,6 +11,14 @@ def create_avatar(config: dict) -> AvatarController:
     if name in ("null", "none", "off"):
         return NullAvatar()
 
+    if name in ("web", "browser"):
+        from .web_avatar import WebAvatar
+        return WebAvatar(
+            host=config.get("avatar_web_host", "127.0.0.1"),
+            port=int(config.get("avatar_web_port", 8010)),
+            name=config.get("avatar_name", "Elysia"),
+        )
+
     if name in ("vtube-studio", "vtubestudio", "vts"):
         from .vtube_studio import VTubeStudioAvatar
         return VTubeStudioAvatar(
@@ -18,4 +26,4 @@ def create_avatar(config: dict) -> AvatarController:
             expressions=config.get("avatar_expressions", {}),
         )
 
-    raise ValueError(f"Unknown avatar_backend: {name!r}. Use 'null' or 'vtube-studio'.")
+    raise ValueError(f"Unknown avatar_backend: {name!r}. Use 'null', 'web', or 'vtube-studio'.")

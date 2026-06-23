@@ -6,7 +6,7 @@ from .base import TTSBackend
 
 
 def create_tts(config: dict) -> TTSBackend:
-    name = (config.get("tts_backend") or "edge").lower()
+    name = (config.get("tts_backend") or "xtts").lower()
 
     if name in ("edge", "edge-tts", "edgetts"):
         from .edge_tts_backend import EdgeTTSBackend
@@ -21,6 +21,7 @@ def create_tts(config: dict) -> TTSBackend:
         from .xtts_backend import XTTSBackend
         return XTTSBackend(
             speaker_wav=config.get("xtts_speaker_wav", ""),
+            speaker=config.get("xtts_speaker", "Ana Florence"),
             model=config.get("xtts_model", "tts_models/multilingual/multi-dataset/xtts_v2"),
         )
 

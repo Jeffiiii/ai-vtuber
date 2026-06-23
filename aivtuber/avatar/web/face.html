@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Elysia</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #00ff00; } /* green-screen for OBS chroma key */
+  .stage { display: flex; align-items: center; justify-content: center; height: 100%; }
+  svg { width: 460px; height: 460px; filter: drop-shadow(0 10px 30px rgba(0,0,0,.15)); }
+  .label { position: fixed; bottom: 12px; left: 0; right: 0; text-align: center;
+           font-family: system-ui, sans-serif; color: #d6337a; opacity: .8; }
+</style>
+</head>
+<body>
+  <div class="stage">
+    <svg id="face" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+      <!-- hair / head -->
+      <circle cx="100" cy="100" r="78" fill="#ffd9ec"/>
+      <circle cx="100" cy="100" r="78" fill="none" stroke="#ff9ecb" stroke-width="3"/>
+      <!-- cheeks -->
+      <circle id="cheekL" cx="62" cy="118" r="11" fill="#ff9ec2" opacity=".55"/>
+      <circle id="cheekR" cx="138" cy="118" r="11" fill="#ff9ec2" opacity=".55"/>
+      <!-- eyes -->
+      <g id="eyes">
+        <ellipse id="eyeL" cx="70" cy="92" rx="9" ry="13" fill="#5b2a4a"/>
+        <ellipse id="eyeR" cx="130" cy="92" rx="9" ry="13" fill="#5b2a4a"/>
+        <circle cx="73" cy="88" r="3" fill="#fff"/>
+        <circle cx="133" cy="88" r="3" fill="#fff"/>
+      </g>
+      <!-- brows (move with emotion) -->
+      <rect id="browL" x="58" y="70" width="24" height="4" rx="2" fill="#c86" />
+      <rect id="browR" x="118" y="70" width="24" height="4" rx="2" fill="#c86" />
+      <!-- mouth (scales vertically while speaking) -->
+      <ellipse id="mouth" cx="100" cy="132" rx="16" ry="4" fill="#c0305f"/>
+    </svg>
+  </div>
+  <div class="label" id="label">Elysia</div>
+<script>
+const mouth = document.getElementById('mouth');
+const label = document.getElementById('label');
+const cheekL = document.getElementById('cheekL'), cheekR = document.getElementById('cheekR');
+const browL = document.getElementById('browL'), browR = document.getElementById('browR');
+let speaking = false, emotion = 'neutral';
+
+// emotion -> simple visual tweaks
+function applyEmotion(e){
+  const map = {
+    happy:    {cheek:.8, brow:-4, color:'#c0305f'},
+    playful:  {cheek:.85, brow:-6, color:'#d6337a'},
+    shy:      {cheek:1.0, brow:-2, color:'#c0305f'},
+    sad:      {cheek:.3, brow:6, color:'#9a4a6a'},
+    surprised:{cheek:.5, brow:-10, color:'#c0305f'},
+    neutral:  {cheek:.55, brow:0, color:'#c0305f'},
+  };
+  const m = map[e] || map.neutral;
+  cheekL.setAttribute('opacity', m.cheek); cheekR.setAttribute('opacity', m.cheek);
+  browL.setAttribute('y', 70 + m.brow); browR.setAttribute('y', 70 + m.brow);
+  mouth.setAttribute('fill', m.color);
+}
+
+// mouth animation loop (lip-sync-ish: random flap while speaking)
+function tick(){
+  const ry = speaking ? (3 + Math.random()*13) : 4;
+  mouth.setAttribute('ry', ry.toFixed(1));
+  requestAnimationFrame(tick);
+}
+tick();
+
+// blink
+setInterval(()=>{ const eyes=document.getElementById('eyes');
+  eyes.style.transform='scaleY(0.1)'; eyes.style.transformOrigin='center 92px';
+  setTimeout(()=>eyes.style.transform='scaleY(1)',120);
+}, 3800);
+
+// poll the local state endpoint
+async function poll(){
+  try{
+    const r = await fetch('/state', {cache:'no-store'});
+    const s = await r.json();
+    speaking = !!s.speaking;
+    if(s.emotion && s.emotion !== emotion){ emotion = s.emotion; applyEmotion(emotion); }
+    if(s.name) label.textContent = s.name;
+  }catch(e){}
+  setTimeout(poll, 120);
+}
+applyEmotion('neutral');
+poll();
+</script>
+</body>
+</html>
