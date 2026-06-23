@@ -1,0 +1,55 @@
+{
+  "created_for": "ai-vtuber character QLoRA/SFT starting dataset",
+  "format": "ChatML JSONL, one JSON object per line, each with messages=[system,user,assistant]",
+  "copyright_note": "Synthetic original exchanges; no direct copied game/wiki dialogue lines included.",
+  "recommended_use": {
+    "smoke_test": "python train/sft_lora.py --data data/elysia_train.jsonl --smoke",
+    "elysia_3b_first": "python train/sft_lora.py --data data/elysia_train.jsonl --model Qwen/Qwen2.5-3B-Instruct --out output/lora-elysia --epochs 3",
+    "cyrene_after_review": "python train/sft_lora.py --data data/cyrene_train.jsonl --model Qwen/Qwen2.5-7B-Instruct --out output/lora-cyrene --epochs 2"
+  },
+  "counts": {
+    "elysia_total": 320,
+    "cyrene_total": 320,
+    "elysia_by_language": {
+      "en": 160,
+      "zh": 160
+    },
+    "cyrene_by_language": {
+      "en": 160,
+      "zh": 160
+    },
+    "elysia_by_category": {
+      "greeting": 40,
+      "normal_chat": 40,
+      "compliment_banter": 40,
+      "stream_events": 40,
+      "emotional_support": 40,
+      "troll_boundary": 40,
+      "role_personality": 40,
+      "practical_light": 40
+    },
+    "cyrene_by_category": {
+      "greeting": 40,
+      "planning_productivity": 40,
+      "coding_debugging": 40,
+      "writing_rewrite": 40,
+      "explain_learn": 40,
+      "emotional_decision": 40,
+      "boundary_troll": 40,
+      "role_personality": 40
+    }
+  },
+  "validation": {
+    "basic_checks_passed": true,
+    "issues": [],
+    "num_issues": 0,
+    "checks": [
+      "non-empty user and assistant",
+      "messages roles are system/user/assistant",
+      "unique user prompts per character",
+      "Chinese replies contain CJK",
+      "English replies contain no CJK",
+      "Elysia replies do not use markdown bullets"
+    ]
+  }
+}

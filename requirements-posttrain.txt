@@ -1,0 +1,10 @@
+torch
+transformers
+datasets
+accelerate
+peft
+bitsandbytes
+safetensors
+sentencepiece
+protobuf
+pandas
