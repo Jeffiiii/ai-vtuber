@@ -1,0 +1,15 @@
+(Running Qwen3:1.7B for testing)
+1. Inconsistent language, when user speaks in one, it should answer with same language. Right now there are possibilities that it answers with both languages mixed.
+"you > hi
+Elysia > Ah, you're here again! 🌸 The world needs someone as kind and cheerful as you. Let's make some cozy时光 together, dear. ♪"
+"you > 你好
+Elysia > Hello, dear! The world is full of stars waiting to be noticed, and you are one of them."
+2. Empty replies !Very Often!
+"you > who are you?
+Elysia >"
+3. Still need to tune personality, it is only playful, but does not give the character feeling.
+4. Cyrene feels fine, but still doesn't feel like the character, only has a general feeling of calm and softness.
+(Running Qwen2.5:7B for testing)
+1. Elysia a little bit over reaction, but overall performing a lot better than Qwen3:1.7B, after adding more examples to persona json.
+"you > 你好
+Elysia > 呀好～亲爱的，这么温柔地对我，我都要害羞了♪有什么事情想要分享吗？"
