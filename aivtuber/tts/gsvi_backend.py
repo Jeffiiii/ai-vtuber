@@ -39,17 +39,20 @@ class GSVIBackend(TTSBackend):
                  emotion: str = "默认", prompt_lang: str = "中文",
                  top_k: int = 10, top_p: float = 1.0, temperature: float = 1.0,
                  speed: float = 1.0, repetition_penalty: float = 1.35,
-                 text_split_method: str = "按标点符号切", timeout_s: int = 120):
+                 sample_steps: int = 8, text_split_method: str = "按标点符号切",
+                 timeout_s: int = 120):
         self.url = url.rstrip("/")
         self.model_name = model_name
         self.version = version
-        self.emotion = emotion
+        self.emotion = emotion          # default emotion (reference clip)
+        self.current_emotion = None     # per-turn override (e.g. from mood)
         self.prompt_lang = prompt_lang
         self.top_k = top_k
         self.top_p = top_p
         self.temperature = temperature
         self.speed = speed
         self.repetition_penalty = repetition_penalty
+        self.sample_steps = sample_steps
         self.text_split_method = text_split_method
         self.timeout_s = timeout_s
         # Never route localhost calls through a system proxy (avoids odd failures
@@ -62,6 +65,10 @@ class GSVIBackend(TTSBackend):
     def _text_lang(self, code: str) -> str:
         return _LANG_LABEL.get(code, _MIXED)
 
+    def set_emotion(self, emotion: str | None) -> None:
+        """Override the reference emotion for upcoming lines (e.g. from her mood)."""
+        self.current_emotion = emotion or None
+
     def synthesize(self, text: str, out_path: str, lang: str | None = None) -> str:
         if not out_path.endswith(".wav"):
             out_path = out_path.rsplit(".", 1)[0] + ".wav"
@@ -69,7 +76,7 @@ class GSVIBackend(TTSBackend):
             "version": self.version,
             "model_name": self.model_name,
             "prompt_text_lang": self.prompt_lang,
-            "emotion": self.emotion,
+            "emotion": self.current_emotion or self.emotion,
             "text": text,
             "text_lang": self._text_lang(lang or detect_lang(text)),
             "top_k": self.top_k,
@@ -77,6 +84,7 @@ class GSVIBackend(TTSBackend):
             "temperature": self.temperature,
             "speed_facter": self.speed,          # note: GSVI spells it "facter"
             "repetition_penalty": self.repetition_penalty,
+            "sample_steps": self.sample_steps,   # v4 diffusion steps; lower = faster
             "text_split_method": self.text_split_method,
             "media_type": "wav",
         }

@@ -30,6 +30,7 @@ def create_tts(config: dict) -> TTSBackend:
             temperature=config.get("gsvi_temperature", 1.0),
             speed=config.get("gsvi_speed", 1.0),
             repetition_penalty=config.get("gsvi_repetition_penalty", 1.35),
+            sample_steps=config.get("gsvi_sample_steps", 8),
         )
 
     if name in ("gptsovits", "gpt-sovits", "sovits"):

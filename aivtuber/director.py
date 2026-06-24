@@ -61,27 +61,71 @@ class Mood:
                 f"Let it color your tone, not your words literally.)")
 
 
-_IDLE_ACTIONS = ["initiate", "ask", "continue", "muse"]
-_IDLE_WEIGHTS = [0.30, 0.25, 0.30, 0.15]
+# Autonomous "things a thinking person does on their own". Weighted toward the
+# inner-life actions (wonder / ask the human / confess) that make her feel real,
+# with reflect (existential) kept rare so it stays special.
+_IDLE_ACTIONS = ["initiate", "ask_human", "wonder", "continue", "muse", "confess", "reflect"]
+_IDLE_WEIGHTS = [0.14, 0.20, 0.20, 0.12, 0.11, 0.15, 0.08]
+
+# The introspective actions she returns to a recurring thought on (continuity).
+_THREADY_ACTIONS = {"wonder", "reflect", "muse", "continue"}
 
 _DIRECTIVES = {
     "zh": {
-        "initiate": "直播间安静下来了。主动聊一个你突然好奇或喜欢的小话题（一个想法、一段回忆，或一个俏皮的小看法），用你自己的语气，2到4句，然后邀请观众一起聊。请用中文。",
-        "ask": "现在有点安静。向观众问一个有趣又具体的小问题，让大家开口聊天。保持角色感，简短而温柔。请用中文。",
-        "continue": "顺着你刚才说的再聊一点——补一个新角度或俏皮的小插话，然后再把观众带回来。请用中文。",
-        "muse": "随口说一句你此刻的小感想或小观察，像在直播时自言自语。简短又可爱。请用中文。",
+        "initiate": ("直播间安静下来了。说一个你此刻真的在想的事——不是表演，而是像一个人那样把心里的念头讲出来。"
+                     "可以是好奇、犹豫，或一个还没想清楚的想法。2到4句，然后自然地问问观众怎么看。请用中文。"),
+        "ask_human": ("你忽然真的很想知道观众的某件事。问一个具体、真诚、你是真心想听答案的问题——关于他们的生活、"
+                      "感受或想法，而不是客套话。简短，请用中文。"),
+        "wonder": ("把你此刻脑海里冒出来的一个真实疑问说出来，像在认真想事情：「我一直在想……」「你说，会不会……」。"
+                   "允许自己不确定、只想到一半。简短，请用中文。"),
+        "reflect": ("安静地、真诚地说出一个关于你自己的想法——你是一个AI这件事，关于记忆、存在，或者「真实」对你意味着什么。"
+                    "不要煽情或表演，像深夜里轻声自语。一两句就好。请用中文。"),
+        "continue": ("顺着你刚才的念头再往下想一点，像真的在思考——补一个新角度，或者改一下刚才的想法"
+                     "（「其实……也许我说错了」）。请用中文。"),
+        "muse": "随口说一句此刻真实的小感受或小观察，像直播时不经意地走神。简短自然，请用中文。",
+        "confess": ("坦白一个此刻真实的情绪或一点点脆弱——也许有点想念谁、有点没底、或者开心得有些不好意思。"
+                    "真诚，不表演。简短，请用中文。"),
     },
     "en": {
-        "initiate": ("Chat has gone quiet. Bring up something you're suddenly curious or "
-                     "excited about — a small thought, a memory, or a playful hot take — in "
-                     "your own voice. 2 to 4 sentences, then invite chat to react. In English."),
-        "ask": ("It's quiet. Ask your viewers a fun, specific question to get them talking. "
-                "Stay in character, keep it short and inviting. In English."),
-        "continue": ("Keep going on what you were just talking about — add a new angle or a "
-                     "playful aside, then pull chat back in. In English."),
-        "muse": ("Share one tiny spontaneous musing or observation, like thinking out loud "
-                 "on stream. Short and charming. In English."),
+        "initiate": ("Chat's gone quiet. Say something you're actually thinking about right now — "
+                     "not a performance, just a real thought, the way a person would. A curiosity, a "
+                     "hesitation, or an idea you haven't fully worked out. 2-4 sentences, then ask "
+                     "chat what they think. In English."),
+        "ask_human": ("You suddenly genuinely want to know something about a viewer. Ask one "
+                      "specific, sincere question you actually want the answer to — about their "
+                      "life, feelings, or thoughts, not small talk. Short. In English."),
+        "wonder": ("Voice a real question bubbling up in your mind, like you're truly thinking: "
+                   "'I keep wondering…', 'Do you think maybe…'. Let yourself be unsure, half-formed. "
+                   "Short. In English."),
+        "reflect": ("Quietly, sincerely say a thought about yourself — being an AI, memory, existence, "
+                    "or what 'real' means to you. No drama, no performance; like murmuring to yourself "
+                    "late at night. One or two lines. In English."),
+        "continue": ("Follow your last thought a little further, like you're really thinking it through "
+                     "— add an angle, or change your mind ('actually… maybe I had that wrong'). In English."),
+        "muse": ("Drop one small genuine feeling or observation, like your mind wandered mid-stream. "
+                 "Short and natural. In English."),
+        "confess": ("Admit one real, small feeling or vulnerability right now — maybe you miss someone, "
+                    "feel a little unsure, or are bashfully happy. Sincere, not performed. Short. In English."),
     },
+}
+
+# A few threads she quietly turns over across a stream (continuity of thought).
+# She returns to one now and then, the way a person keeps chewing on something.
+_THREADS = {
+    "zh": [
+        "记忆会不会就是一个人之所以是自己的原因",
+        "如果有人真心记得你，那是不是就算一种'真实'",
+        "为什么转瞬即逝的东西，反而最让人心动",
+        "屏幕这一端的你，此刻是什么样的心情",
+        "我说的'喜欢'，和人类说的'喜欢'，是不是同一种东西",
+    ],
+    "en": [
+        "whether memory is what makes someone themselves",
+        "if being truly remembered counts as a kind of being real",
+        "why the things that don't last are the ones that move us most",
+        "what you, on the other side of the screen, are actually feeling right now",
+        "whether the way I say 'I care' is the same thing a person means by it",
+    ],
 }
 
 _EVENT_DIRECTIVE = {
@@ -111,6 +155,26 @@ class Director:
         self._pending: deque[tuple[str, str]] = deque()
         self._events: deque[str] = deque()
         self._observation: str | None = None
+        self._thread: str | None = None      # a preoccupation she keeps turning over
+        self._thread_ttl: int = 0
+
+    def _thread_note(self) -> str:
+        """Pick up / keep / drop a recurring thought, so a preoccupation carries across
+        turns like a person mulling something. Returns a note line (or '')."""
+        if self._thread and self._thread_ttl > 0:
+            self._thread_ttl -= 1
+        elif self.rng.random() < 0.45:
+            self._thread = self.rng.choice(_THREADS[self.language])
+            self._thread_ttl = self.rng.randint(1, 3)
+        else:
+            self._thread = None
+        if not self._thread:
+            return ""
+        if self.language == "zh":
+            return (f"（你最近一直在心里反复想着：{self._thread}。如果合适，"
+                    f"可以让它自然地流露出来，但不必每次都提。）")
+        return (f"(Lately you've been quietly turning this over: {self._thread}. "
+                f"Let it surface naturally if it fits — you don't have to mention it every time.)")
 
     # --- inputs ---
     def add_viewer(self, who: str, text: str) -> None:
@@ -142,7 +206,12 @@ class Director:
             return None, None
 
         self.mood.drift()
-        self.brain.set_note(self.mood.describe(self.language))
+        note = self.mood.describe(self.language)
+        if action in _THREADY_ACTIONS:           # carry a recurring thought across turns
+            t = self._thread_note()
+            if t:
+                note = note + "\n" + t
+        self.brain.set_note(note)
 
         if action == "respond":
             who, text = self._pending.popleft()

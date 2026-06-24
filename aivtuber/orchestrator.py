@@ -25,6 +25,8 @@ Everything degrades gracefully: missing extras just disable that feature. /quit 
 from __future__ import annotations
 
 import argparse
+import queue
+import re
 import sys
 import tempfile
 import threading
@@ -37,7 +39,7 @@ from .config import load_config
 from .director import Director, Mood
 from .emotion import detect_emotion
 from .llm import create_provider
-from .memory import ShortTermMemory
+from .memory import LongTermMemory, ShortTermMemory
 from .persona import Persona
 
 
@@ -59,15 +61,72 @@ def _run_game(brain, persona, game_name, cfg, speak, tts, avatar):
         allow, reply = moderation.filter_outgoing(reply)
         if speak and tts and reply:
             try:
-                avatar.speak_start()
-                audio.play(tts.synthesize(reply, tempfile.mktemp(suffix=tts.output_ext)))
+                _speak_streaming(reply, tts, avatar, audio)
             except Exception:
                 pass
-            finally:
-                avatar.speak_end()
         print("  >> " + agent.apply(reply) + "\n")
         time.sleep(0.4)
     print(f"\n[game over] {agent.result_text()}\n")
+
+
+_SENT_SPLIT = re.compile(r"(?<=[。！？…♪])|(?<=[.!?])(?=\s)")
+
+
+def _split_sentences(text: str) -> list[str]:
+    """Break a reply into speakable chunks (keep each delimiter with its chunk)."""
+    parts = [p.strip() for p in _SENT_SPLIT.split(text.replace("\n", " ")) if p.strip()]
+    out: list[str] = []
+    for p in parts:
+        if out and (len(p) < 6 or len(out[-1]) < 6):
+            out[-1] += p          # fold tiny fragments into the previous chunk
+        else:
+            out.append(p)
+    return out or [text]
+
+
+def _speak_streaming(reply, tts, avatar, audio):
+    """Synthesize sentence-by-sentence in a worker thread and play in order, so she
+    starts speaking after the first sentence instead of waiting for the whole line.
+    The synth of sentence N+1 overlaps the playback of sentence N (kind to latency)."""
+    sentences = _split_sentences(reply)
+    q: queue.Queue = queue.Queue()
+
+    def _worker():
+        for s in sentences:
+            try:
+                q.put(tts.synthesize(s, tempfile.mktemp(suffix=tts.output_ext)))
+            except Exception as e:
+                q.put(("__err__", str(e)))
+        q.put(None)
+
+    threading.Thread(target=_worker, daemon=True).start()
+    avatar.speak_start()
+    try:
+        while True:
+            item = q.get()
+            if item is None:
+                break
+            if isinstance(item, tuple):     # a chunk failed to synth; keep going
+                print(f"[tts error: {item[1]}]")
+                continue
+            audio.play(item)
+    finally:
+        avatar.speak_end()
+
+
+def _mood_emotion(energy: float, mapping: dict):
+    """Map the Director's mood energy (0-1) to a GSVI voice emotion."""
+    if not mapping:
+        return None
+    if energy <= 0.30:
+        key = "tender"
+    elif energy <= 0.55:
+        key = "warm"
+    elif energy <= 0.78:
+        key = "playful"
+    else:
+        key = "hyper"
+    return mapping.get(key)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -94,11 +153,20 @@ def main(argv: list[str] | None = None) -> int:
         print("  ✗ Start the model server / Ollama first."); return 1
     provider.ensure_ready()
 
+    longterm = None
+    if cfg.get("longterm_enabled", True):
+        lt_path = Path(cfg.get("longterm_path", "memory/longterm.json"))
+        if not lt_path.is_absolute():
+            lt_path = root / lt_path
+        longterm = LongTermMemory(path=lt_path)
+        print(f"  Memory: long-term on ({lt_path})")
     brain = Brain(provider, persona,
                   memory=ShortTermMemory(max_turns=int(cfg["max_turns"])),
                   temperature=float(cfg["temperature"]),
                   max_tokens=int(cfg["max_tokens"]),
-                  max_examples=int(cfg.get("max_examples", 8)))
+                  max_examples=int(cfg.get("max_examples", 8)),
+                  longterm=longterm,
+                  longterm_update_every=int(cfg.get("longterm_update_every", 4)))
 
     # --- voice ---
     speak = not args.no_voice
@@ -198,6 +266,29 @@ def main(argv: list[str] | None = None) -> int:
     print(f"\n  LIVE. She speaks on her own after ~{director.idle_seconds:.0f}s. "
           f"/quit to stop.\n")
 
+    # --- operator kill-switch: type commands in THIS terminal while live ---
+    ops = {"muted": False, "paused": False, "quit": False}
+    if args.platform != "console":   # console mode uses stdin for viewer input
+        print("  [operator] commands: mute | unmute | pause | resume | panic | quit\n")
+
+        def _operator():
+            for line in iter(sys.stdin.readline, ""):
+                c = line.strip().lower()
+                if c in ("mute", "m"):
+                    ops["muted"] = True; print("  [op] MUTED — voice off")
+                elif c in ("unmute", "u"):
+                    ops["muted"] = False; print("  [op] unmuted")
+                elif c in ("pause", "p"):
+                    ops["paused"] = True; print("  [op] PAUSED — she's quiet")
+                elif c in ("resume", "r"):
+                    ops["paused"] = False; print("  [op] resumed")
+                elif c in ("panic", "x"):
+                    ops["muted"] = True; ops["paused"] = True
+                    print("  [op] *** PANIC *** muted + paused")
+                elif c in ("quit", "q", "/quit"):
+                    ops["quit"] = True; print("  [op] quitting…"); break
+        threading.Thread(target=_operator, daemon=True).start()
+
     def emit(action, stream):
         tag = "" if action == "respond" else f"  ({action})"
         print(f"{persona.name}{tag} > ", end="", flush=True)
@@ -214,14 +305,14 @@ def main(argv: list[str] | None = None) -> int:
             avatar.set_emotion(detect_emotion(reply))
         except Exception:
             pass
-        if speak and tts and reply:
+        if speak and tts and reply and not ops["muted"]:
             try:
-                avatar.speak_start()
-                audio.play(tts.synthesize(reply, tempfile.mktemp(suffix=tts.output_ext)))
+                if hasattr(tts, "set_emotion"):   # GSVI: match voice energy to mood
+                    tts.set_emotion(_mood_emotion(director.mood.energy,
+                                                  cfg.get("gsvi_mood_emotions", {})))
+                _speak_streaming(reply, tts, avatar, audio)
             except Exception as e:
                 print(f"[tts error: {e}]")
-            finally:
-                avatar.speak_end()
 
     running = True
     try:
@@ -237,9 +328,12 @@ def main(argv: list[str] | None = None) -> int:
                 if not allow:
                     continue  # drop unsafe/empty viewer messages silently
                 print(f"[{m.platform}] {m.user}: {cleaned}")
+                brain.set_speaker(m.user)        # recall this viewer's long-term memory
                 director.add_viewer(m.user, cleaned)
-            if not running:
+            if not running or ops["quit"]:
                 break
+            if ops["paused"]:
+                time.sleep(tick); continue
             action, stream = director.step()
             if stream is not None:
                 try:

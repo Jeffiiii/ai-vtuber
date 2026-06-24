@@ -25,6 +25,11 @@ DEFAULTS = {
     "max_turns": 12,
     "max_examples": 8,
 
+    # --- long-term, per-viewer memory (remember regulars across sessions) ---
+    "longterm_enabled": True,
+    "longterm_path": "memory/longterm.json",
+    "longterm_update_every": 4,              # refresh a viewer's profile every N of their messages
+
     # --- Stage 2: voice (TTS) ---
     "voice_enabled": False,                 # voice_cli speaks replies when True
     "tts_backend": "xtts",                  # "xtts" (local, default) | "edge" (online)
@@ -69,6 +74,15 @@ DEFAULTS = {
     "gsvi_temperature": 1.0,
     "gsvi_speed": 1.0,
     "gsvi_repetition_penalty": 1.35,
+    "gsvi_sample_steps": 8,                      # v4 diffusion steps: 8 fast / 16 higher quality
+    # Director mood -> GSVI reference emotion (must match clips in the model's
+    # reference_audios/中文/emotions/ folder). Drives her vocal energy by mood.
+    "gsvi_mood_emotions": {
+        "tender": "平静",     # calm
+        "warm": "温柔",       # gentle
+        "playful": "默认",    # default / bright
+        "hyper": "激动",      # excited
+    },
 
     # --- Stage 2: ears (STT) ---
     "stt_backend": "faster-whisper",
