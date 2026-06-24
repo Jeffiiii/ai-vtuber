@@ -67,13 +67,27 @@ def generate(messages, temperature: float, max_tokens: int) -> str:
 
 
 class Handler(BaseHTTPRequestHandler):
+    def _cors(self):
+        # Allow the static website (any local origin) to call this from the browser.
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type")
+
     def _send(self, code, obj):
         data = json.dumps(obj, ensure_ascii=False).encode("utf-8")
         self.send_response(code)
+        self._cors()
         self.send_header("Content-Type", "application/json")
         self.send_header("Content-Length", str(len(data)))
         self.end_headers()
         self.wfile.write(data)
+
+    def do_OPTIONS(self):
+        # CORS preflight for the browser fetch from the website.
+        self.send_response(204)
+        self._cors()
+        self.send_header("Content-Length", "0")
+        self.end_headers()
 
     def do_GET(self):
         if self.path == "/health":

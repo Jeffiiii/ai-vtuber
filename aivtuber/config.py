@@ -35,6 +35,40 @@ DEFAULTS = {
     "xtts_speaker_wav": "",                 # path to a 6-20s clip to CLONE a voice (optional)
     "xtts_speaker": "Ana Florence",         # built-in XTTS voice used when no clip
     "xtts_model": "tts_models/multilingual/multi-dataset/xtts_v2",
+    "xtts_device": "auto",                  # "auto" | "cuda" (force GPU) | "cpu"
+    # xtts_speaker_wav (above) may be a single .wav OR a folder of clean clips (blended).
+    # Generation knobs — lower temperature = steadier/less "creepy"; speed 1.0 = normal.
+    "xtts_temperature": 0.65,               # 0.5-0.8; lower if the tone wobbles
+    "xtts_length_penalty": 1.0,
+    "xtts_repetition_penalty": 2.0,         # raise (3-5) if it slurs/repeats
+    "xtts_top_k": 50,
+    "xtts_top_p": 0.85,
+    "xtts_speed": 1.0,                      # 0.9-1.1; slight changes affect naturalness
+
+    # --- GPT-SoVITS backend (tts_backend: "gptsovits") — local character voice ---
+    "gptsovits_url": "http://127.0.0.1:9880",   # GPT-SoVITS api_v2.py server
+    "gptsovits_ref_audio": "",                  # path (on the GPT-SoVITS host) to a 3-10s ref clip
+    "gptsovits_prompt_text": "",                # the EXACT transcript of that ref clip
+    "gptsovits_prompt_lang": "zh",              # language of the ref clip: zh | en | ja
+    "gptsovits_gpt_weights": "",                # optional: .ckpt to auto-load (else set in GPT-SoVITS)
+    "gptsovits_sovits_weights": "",             # optional: .pth to auto-load
+    "gptsovits_top_k": 15,
+    "gptsovits_top_p": 1.0,
+    "gptsovits_temperature": 1.0,
+    "gptsovits_speed": 1.0,
+    "gptsovits_text_split": "cut5",             # GPT-SoVITS sentence splitter
+
+    # --- GSVI backend (tts_backend: "gsvi") — GPT-SoVITS-Inference server ---
+    "gsvi_url": "http://127.0.0.1:8002",        # run: gsvi.py -p 8002 (8000 = LLM server)
+    "gsvi_model_name": "爱莉希雅",               # the folder name under models/<version>/
+    "gsvi_version": "v4",
+    "gsvi_emotion": "默认",                      # emotion tag from the model's reference clips
+    "gsvi_prompt_lang": "中文",                  # language label of the reference clip
+    "gsvi_top_k": 10,
+    "gsvi_top_p": 1.0,
+    "gsvi_temperature": 1.0,
+    "gsvi_speed": 1.0,
+    "gsvi_repetition_penalty": 1.35,
 
     # --- Stage 2: ears (STT) ---
     "stt_backend": "faster-whisper",

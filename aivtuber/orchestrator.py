@@ -109,6 +109,15 @@ def main(argv: list[str] | None = None) -> int:
         tok, tmsg = tts.is_available()
         print(f"  Voice: {tts.name} — {tmsg}")
         speak = tok
+        # Load the model now so the slow first load happens at startup, not mid-stream
+        # (XTTS only; edge-tts has no warmup). "LIVE" then means voice is truly ready.
+        if speak and hasattr(tts, "warmup"):
+            print("  Voice: warming up (loading model, first time can take a bit)…", flush=True)
+            try:
+                dev = tts.warmup()
+                print(f"  Voice: ready on {dev}.")
+            except Exception as e:
+                print(f"  Voice: warmup failed ({e}); will load on first line.")
 
     # --- avatar ---
     from .avatar import create_avatar

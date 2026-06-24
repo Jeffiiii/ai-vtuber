@@ -8,6 +8,9 @@
 
 # --- TTS (voice out) ---
 TTS>=0.22                # Coqui XTTS v2 — local, offline, EN/ZH; DEFAULT voice backend
+transformers<4.41        # Coqui TTS uses the old generation API (BeamSearchScorer);
+                         # transformers >=4.41 removed it. This venv talks to the LLM over
+                         # HTTP (local_http), so it does NOT need a newer transformers.
 playsound==1.2.2         # plays the wav/mp3 output (1.2.2 is the stable release)
 edge-tts>=6.1           # optional alternative (free, online) — tts_backend: "edge"
 
