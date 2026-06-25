@@ -32,7 +32,12 @@ def parse_args():
     p.add_argument("--out", default="output/lora-elysia", help="Where to save the adapter")
     p.add_argument("--epochs", type=float, default=3.0)
     p.add_argument("--lr", type=float, default=2e-4)
-    p.add_argument("--max-seq-len", type=int, default=1024)
+    p.add_argument("--max-seq-len", type=int, default=2048,
+                   help="Raised from 1024 so long replies aren't truncated (the tail of the "
+                        "assistant turn is the training target).")
+    p.add_argument("--val-frac", type=float, default=0.1,
+                   help="Held-out validation fraction (for eval_loss / best-model selection).")
+    p.add_argument("--seed", type=int, default=42)
     p.add_argument("--batch", type=int, default=1, help="Per-device batch size (keep 1 on 8GB)")
     p.add_argument("--grad-accum", type=int, default=16, help="Gradient accumulation steps")
     p.add_argument("--lora-r", type=int, default=16)
@@ -51,7 +56,9 @@ def main():
     from datasets import load_dataset
     from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
     from transformers import (AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig,
-                              DataCollatorForLanguageModeling, Trainer, TrainingArguments)
+                              DataCollatorForSeq2Seq, Trainer, TrainingArguments, set_seed)
+
+    set_seed(args.seed)   # reproducible split + init
 
     if not torch.cuda.is_available():
         raise SystemExit(
@@ -69,26 +76,43 @@ def main():
     if tok.pad_token is None:
         tok.pad_token = tok.eos_token
 
-    def to_text(example):
-        # Render the chat turns into the model's training format. enable_thinking=False
-        # keeps Qwen3 from injecting a <think> phase (we want snappy replies).
-        kwargs = dict(tokenize=False, add_generation_prompt=False)
+    def _template(messages, add_generation_prompt):
+        kwargs = dict(tokenize=False, add_generation_prompt=add_generation_prompt)
         try:
-            text = tok.apply_chat_template(example["messages"], enable_thinking=False, **kwargs)
+            return tok.apply_chat_template(messages, enable_thinking=False, **kwargs)
         except TypeError:
-            text = tok.apply_chat_template(example["messages"], **kwargs)
-        return {"text": text}
+            return tok.apply_chat_template(messages, **kwargs)
 
-    ds = load_dataset("json", data_files=args.data, split="train")
+    def encode(example):
+        # Completion-only loss: render the full chat AND the prompt-only prefix, then
+        # mask every prompt/template token to -100 so loss is computed ONLY over her
+        # assistant reply (the voice we're actually training), not the repeated template.
+        msgs = example["messages"]
+        full = _template(msgs, add_generation_prompt=False)
+        prompt = _template(msgs[:-1], add_generation_prompt=True)
+        full_ids = tok(full, truncation=True, max_length=args.max_seq_len)["input_ids"]
+        prompt_ids = tok(prompt, truncation=True, max_length=args.max_seq_len)["input_ids"]
+        labels = list(full_ids)
+        for i in range(min(len(prompt_ids), len(labels))):
+            labels[i] = -100
+        return {"input_ids": full_ids,
+                "attention_mask": [1] * len(full_ids),
+                "labels": labels}
+
+    raw = load_dataset("json", data_files=args.data, split="train")
     if args.smoke:
-        ds = ds.select(range(min(8, len(ds))))
-    ds = ds.map(to_text, remove_columns=ds.column_names)
+        raw = raw.select(range(min(8, len(raw))))
+    encoded = raw.map(encode, remove_columns=raw.column_names)
 
-    def tokenize(example):
-        return tok(example["text"], truncation=True, max_length=args.max_seq_len)
-
-    ds = ds.map(tokenize, remove_columns=["text"])
-    print(f"Training examples: {len(ds)}")
+    # Held-out validation set so we can watch eval_loss and keep the best epoch,
+    # instead of blindly saving the final (possibly overfit) one.
+    eval_ds = None
+    if not args.smoke and len(encoded) >= 20 and args.val_frac > 0:
+        split = encoded.train_test_split(test_size=args.val_frac, seed=args.seed)
+        ds, eval_ds = split["train"], split["test"]
+    else:
+        ds = encoded
+    print(f"Training examples: {len(ds)}" + (f" | validation: {len(eval_ds)}" if eval_ds else ""))
 
     # ---- 4-bit base model (QLoRA) ----
     bnb = BitsAndBytesConfig(
@@ -115,26 +139,35 @@ def main():
     model = get_peft_model(model, lora)
     model.print_trainable_parameters()
 
-    collator = DataCollatorForLanguageModeling(tok, mlm=False)
+    # pads input_ids/attention_mask AND labels (with -100), preserving the masking.
+    collator = DataCollatorForSeq2Seq(tok, padding=True, label_pad_token_id=-100)
 
+    do_eval = eval_ds is not None
     targs = TrainingArguments(
         output_dir=args.out,
         num_train_epochs=1 if args.smoke else args.epochs,
         per_device_train_batch_size=args.batch,
+        per_device_eval_batch_size=args.batch,
         gradient_accumulation_steps=1 if args.smoke else args.grad_accum,
         learning_rate=args.lr,
         lr_scheduler_type="cosine",
         warmup_ratio=0.03,
         logging_steps=2 if args.smoke else 5,
         save_strategy="no" if args.smoke else "epoch",
+        eval_strategy="epoch" if do_eval else "no",
+        load_best_model_at_end=do_eval,
+        metric_for_best_model="eval_loss",
+        greater_is_better=False,
         bf16=bf16_ok,
         fp16=not bf16_ok,
         gradient_checkpointing=True,
         optim="paged_adamw_8bit",
+        seed=args.seed,
         report_to="none",
     )
 
-    trainer = Trainer(model=model, args=targs, train_dataset=ds, data_collator=collator)
+    trainer = Trainer(model=model, args=targs, train_dataset=ds,
+                      eval_dataset=eval_ds, data_collator=collator)
     trainer.train()
 
     if args.smoke:

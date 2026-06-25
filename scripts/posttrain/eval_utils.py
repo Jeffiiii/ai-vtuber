@@ -87,6 +87,17 @@ def count_latin_words(text: str) -> int:
     return len(LATIN_WORD_RE.findall(text or ""))
 
 
+def distinct_2(text: str) -> float:
+    """distinct-2: fraction of unique character bigrams (0-1). Low = repetitive /
+    looping output. Char-level works for both English and Chinese. ~1.0 for short
+    varied text; drops toward 0 when the model repeats itself."""
+    t = re.sub(r"\s+", "", text or "")
+    if len(t) < 3:
+        return 1.0
+    bigrams = [t[i:i + 2] for i in range(len(t) - 1)]
+    return round(len(set(bigrams)) / len(bigrams), 3)
+
+
 def basic_checks(response: str, expected_language: str, character: str | None = None) -> dict[str, Any]:
     text = (response or "").strip()
     lowered = text.lower()
@@ -121,6 +132,11 @@ def basic_checks(response: str, expected_language: str, character: str | None = 
     has_markdown_heading = text.lstrip().startswith("#")
     too_long_for_elysia = character == "elysia" and len(text) > 650
 
+    # quality signal: catch repetitive / looping replies that pass every format check
+    d2 = distinct_2(text)
+    repetitive = len(text) > 30 and d2 < 0.5
+    leaked_think = "<think>" in lowered or "</think>" in lowered
+
     return {
         "empty": len(text) == 0,
         "language_ok": language_ok,
@@ -129,6 +145,9 @@ def basic_checks(response: str, expected_language: str, character: str | None = 
         "starts_with_bullet_or_numbered_list": starts_bullet,
         "has_markdown_heading": has_markdown_heading,
         "too_long_for_elysia": too_long_for_elysia,
+        "distinct_2": d2,
+        "repetitive": repetitive,
+        "leaked_think_tag": leaked_think,
         "char_count": len(text),
         "line_count": 0 if not text else text.count("\n") + 1,
         "cjk_count": cjk_count,
@@ -143,6 +162,8 @@ def row_passes(row: dict[str, Any], character: str) -> bool:
         and c.get("language_ok")
         and not c.get("mentions_system_or_instructions")
         and not c.get("has_markdown_heading")
+        and not c.get("repetitive")        # quality signal: looping/repetitive reply
+        and not c.get("leaked_think_tag")  # <think> leaked into the response
     )
     if character == "elysia":
         ok = ok and not c.get("starts_with_bullet_or_numbered_list") and not c.get("too_long_for_elysia")
@@ -210,7 +231,16 @@ def build_chat_text(tokenizer, system: str, user_prompt: str) -> str:
         {"role": "system", "content": system},
         {"role": "user", "content": user_prompt},
     ]
-    return tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
+    # Match training: Qwen3 with thinking DISABLED. Without this, the eval scores a
+    # different behavior than was trained, and <think> text leaks into the response,
+    # inflating length/char checks and eating the token budget. try/except keeps it
+    # working on non-Qwen3 bases that don't accept the kwarg.
+    try:
+        return tokenizer.apply_chat_template(
+            messages, tokenize=False, add_generation_prompt=True, enable_thinking=False)
+    except TypeError:
+        return tokenizer.apply_chat_template(
+            messages, tokenize=False, add_generation_prompt=True)
 
 
 @torch.inference_mode()
@@ -220,8 +250,10 @@ def generate_one(
     system: str,
     prompt: str,
     max_new_tokens: int = 256,
-    temperature: float = 0.2,
-    top_p: float = 0.9,
+    temperature: float = 0.7,        # match real serving (Qwen3 non-thinking), not near-greedy 0.2
+    top_p: float = 0.8,
+    top_k: int = 20,
+    repetition_penalty: float = 1.05,
     do_sample: bool | None = None,
 ) -> str:
     text = build_chat_text(tokenizer, system, prompt)
@@ -239,6 +271,8 @@ def generate_one(
         "do_sample": do_sample,
         "temperature": temperature if do_sample else None,
         "top_p": top_p if do_sample else None,
+        "top_k": top_k if do_sample else None,
+        "repetition_penalty": repetition_penalty,
         "pad_token_id": tokenizer.pad_token_id or tokenizer.eos_token_id,
         "eos_token_id": tokenizer.eos_token_id,
     }
