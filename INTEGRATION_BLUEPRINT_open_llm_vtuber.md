@@ -82,6 +82,15 @@ You're building this in **two arcs** (your call: *both, phased*):
   stakes — game-playing, à la Neuro's real engine. This is where your `games/` work becomes central.
   It's a major second-system lift; it waits until the reactive core is solid and the brain is better.
 
+**Keep the engine character-agnostic.** The goal is both a private companion *and*, later, a public
+VTuber — and because Elysia is a HoYoverse character, the public version must be an **original**
+character. (Private use and *small, unmonetized* streaming tests can stay Elysia; do **not** monetize
+her or grow an audience around the Elysia identity — switch to the original character before anyone is
+asked to pay or to care.) The consequence for *this* build: keep the **character** layer (persona
+text, voice, Live2D rig — the `elysia.json` assets) cleanly separable from the **engine** (memory,
+mood, scheduler, perception). Then the eventual character swap is config-and-assets, not surgery.
+Hold that seam from day one; your existing persona/engine split already points the right way.
+
 ---
 
 ## 0. TL;DR — build on OLV
@@ -449,9 +458,22 @@ This is what makes her lines *reactions to real stimuli* rather than recitations
   surface), **Director-level** (out of scope until toggled).
 - **Twitch — port your `twitch_source.py`** onto OLV's `LivePlatformInterface` (mirror
   `bilibili_live.py`; OLV ships Bilibili). It's a *stimulus source*, not an audience/influence system.
+- **Web access — three layers, decided separately by the usual test (a real situation to react to? is
+  it the bottleneck?):** *(a) Temporal grounding now* — current date/time/weather; trivial, removes
+  the training-cutoff bubble; do it early. *(b) Curated ambient feed* — a few sources **you pick** she
+  can ambiently react to; a real, changing world like the screen, and controllable because it's
+  curated; a strong mid-term perception source. *(c) On-demand search* — she invokes it when a fact
+  actually needs it (via OLV's MCP/tool support); bounded, and **brain-gated** (a 4B may add noise
+  more than insight, so its value rises after a brain upgrade); later. *Open autonomous browsing /
+  social feeds* — defer or avoid (marginal gain over a curated feed, wide injection surface, character
+  pollution). **Discipline for all of it:** web content is *data to summarize and react to, never
+  instructions to follow* (untrusted — the same prompt-injection surface as addressable chat), and she
+  takes **no consequential actions** on it.
 
 **Why this is the engine:** without a real situation to perceive, even perfect memory + mood is a
 better monologue generator. Perception is what turns state into *response*.
+
+**Safety Concerns** Private and single-user → no content limits needed; spontaneity is the priority and unrestricted is fine. Restriction layer designed later before stream stage.
 
 ---
 

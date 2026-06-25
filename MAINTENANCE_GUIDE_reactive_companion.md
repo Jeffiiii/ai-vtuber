@@ -180,6 +180,7 @@ latency; no loops.
 | Language mismatch | sampling / training balance / policy | Check the language policy; check EN/ZH balance in voice data. |
 | Latency high | context too big, model spilling to CPU (VRAM), KV cache type, segmentation | Tighten `mem_token_budget`/`top_k`; verify full GPU offload (the silent-CPU-offload trap); `OLLAMA_KV_CACHE_TYPE=q8_0`; check `faster_first_response`. |
 | Repetition / loops | temp too low (Qwen3 quirk), no penalty | Raise `temperature` toward 0.7; add repetition/presence penalty. |
+| Spoken voice over-bright / wrong tone (TTS, e.g. GPT-SoVITS) | TTS stuck on one emotional setting, which *fights* real mood | Tune/replace the TTS **after** mood is working (C) — only then can you tell a TTS flaw from undriven emotion. Couple "fix the voice" to "mood works," never do it in a vacuum. (Slow generation → lighter/streamed TTS, run off the hot path.) |
 
 ### 3.6 Operational health [§8]
 
@@ -224,8 +225,15 @@ Defaults are starting points — *tune by symptom*, change one at a time, valida
 The store is the one component that *rots* if untended (and *deepens* if tended — it's your free
 realness lever). **[Cowork] runs; [You] reviews the profile.**
 
-- **Weekly:** back up the DB (copy the sqlite + index, timestamped). Prune the **ambient** pool
-  aggressively (low-importance, old, unused).
+- **Automatic, nightly, offsite (set up once — do this the week memory ships):** an *automatic*
+  nightly copy of the DB (sqlite + index, timestamped) to a **second location** — another drive, a
+  cloud folder, anywhere not the same disk. Keep several rolling snapshots (a bad migration can corrupt
+  the live DB *and* get backed up, so one copy isn't enough). This is non-negotiable: after a year the
+  memory *is* her, and it's the one asset with no rebuild-from-scratch — a manual backup you run when
+  you remember will reliably be a week stale the day the drive dies. **[Cowork]** sets it up once; it
+  then runs itself.
+- **Weekly:** confirm the nightly backup actually ran; prune the **ambient** pool aggressively
+  (low-importance, old, unused).
 - **Monthly (audit, via 1.4):**
   - **Contradiction sweep** — list items about the same entity/attribute; supersede stale ones.
   - **Dedup** — merge near-duplicates the live dedup missed; raise `dedup_similarity` if many.
