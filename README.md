@@ -24,7 +24,7 @@ or add cloud backends with a one-line change.
 
 - **Python 3.10+**
 - **[Ollama](https://ollama.com)** installed (you're downloading it now 👍)
-- Your **RTX 4060 (8GB) + i9** comfortably runs a quantized 7B model.
+- **RTX 4060 (8GB) + i9 + 32GB RAM** comfortably runs a quantized 7B model.
 
 No `pip install` is needed for the core — Stage 1 uses only the Python standard library.
 (`pytest` is only needed to run the tests.)
