@@ -83,6 +83,60 @@ contradictions, the operator profile, and per-pool counts. You run this during m
 **1.5 Weekly summary generator** [Cowork] — rolls the turn log into metrics (§ tracking the curve)
 so you see trends, not just snapshots.
 
+**1.6 Guest mode — fresh-eyes flaw-finding** [Cowork builds the switch; You + a friend run it]. Let
+someone who *isn't you* talk to her — you are the worst person to find her tells, because you've
+unconsciously calibrated to her quirks, phrase things in the ways she handles best, and steer around
+her weak spots without noticing. A fresh person hits her in ways you never would and *feels* the
+off-moments you've gone blind to; five minutes with a friend surfaces flaws you'd miss for a month.
+The details that make it a flaw-finding instrument rather than a demo:
+
+- **No memory writes.** Run the session with `skip_memory` + `skip_history` on (the ambient-input
+  flags from the blueprint) so a guest's chat never pollutes the operator pool or the transcript —
+  she stays uncontaminated, the guest still gets the full, real her. This is the "don't store" switch
+  you already have.
+- **Keep logging on — and make "skip memory" and "skip logging" *separate* switches.** Guest mode
+  skips *memory*, not *observability*: the per-turn log (1.1) must still record everything, or the
+  flaws your friend finds vanish unfixed. A guest session with a flagged log is an instrument; one
+  without is just a demo. (Build the two as independent toggles.)
+- **Watch / record — don't just hand it over.** Much of the signal is in *how* the guest reacts (the
+  pause, the "huh?", the moment the spell breaks), which a transcript alone won't capture. Sit in or
+  record, and flag off-moments in real time (1.2). **You** fix them later; the guest only finds them.
+- **The first-audience boundary applies.** A guest is your first tiny audience, so the child-safety
+  floor (blueprint Workstream E) is in effect; and expect the guest to poke at her flirtatious side
+  and try to break her — that's *useful* edge-finding, not a malfunction, but you'll see her
+  unfiltered.
+- **Bonus signal:** a fresh person finds not just *bugs* but *blind spots in your sense of her* —
+  places you think she's fine because you've adapted, where she isn't. That's a signal only someone
+  who isn't you can give.
+
+**The content is the probe — make it deep, not shallow.** Not storing the chat doesn't make its
+*content* irrelevant: a session only tests the systems the conversation actually *invokes*. A shallow
+cold chat ("hi", "what are you", a joke, a flirt) exercises only her surface — voice, basic
+reactivity, persona — while the deep systems stay silent: memory can't show a flaw if nothing's been
+remembered, mood can't if nothing moved it, preoccupations can't if none had time to form. A shallow
+chat makes a shallow companion *look* fine — the worst outcome, since it hides the very flaws you most
+need to find. Brief the guest to reach the deep systems:
+
+- **Continuity to test against** — a true cold stranger has no history to recall, so the deepest layer
+  is invisible to them. Either let the *same* friend return across several sessions (now there's
+  history to get right or wrong), or seed a little context first ("she knows you're my friend who just
+  started a new job") and watch whether she uses it naturally.
+- **Real emotional texture, not just questions** — "capital of France" tests nothing; "I had a rough
+  week" should move her mood and pull an appropriate tone, and whether it *does* is the test. Emotion
+  exercises mood + memory-weight; trivia exercises only the model.
+- **What you never would** — abrupt topic changes, contradictions, going quiet (does she initiate?),
+  circling back to something from earlier (did she track it?), being difficult. Your own chats are
+  unconsciously cooperative; an unpredictable guest hits the timing / salience / continuity systems
+  you always accidentally protect.
+- **Longer and coherent beats many one-liners** — even unstored, a single session builds in-session
+  state (mood, the working buffer, any preoccupations that form), so 30 real minutes surface what five
+  minutes of pokes never will.
+
+One instruction for a friend beats a checklist: *"talk to her like someone you're getting to know,
+bring something real, and don't be careful with her."* (Still run a *cold-open* session occasionally —
+first impressions are their own thing to get right — just don't mistake the shallow chat for a full
+test.)
+
 ---
 
 ## 2. The maintenance cadence
@@ -93,6 +147,7 @@ so you see trends, not just snapshots.
 | **Each active-use day** | Skim flagged moments; jot a one-line note on anything that felt wrong (the running feels-off log builds itself from 1.2). | [You], parsed by [Cowork] |
 | **Weekly** (~30–60 min) | Run the probe harness + golden set; generate the weekly summary; review flags + metrics together; pick **1–3** tuning changes and apply+validate; back up the memory DB; quick ambient-pool prune. | [Cowork] runs, [Both] decide |
 | **Monthly** (~1–2 hr) | Full memory audit (1.4): contradiction sweep, profile-drift review, prune; review the brain-upgrade trigger (§6); review resource trends (disk, VRAM headroom, latency percentiles); re-baseline the golden set if her stable behavior has legitimately shifted. | [Both] |
+| **Occasional (high-value)** | A *guest session* (1.6): a fresh person chats in **guest mode** (no memory writes, logging on) to surface tells you've gone blind to. Watch, flag off-moments, fix later. | [You] + a friend |
 | **Event-driven** | After *any* config/code change → regression test before trusting (§7). On a *persistent* one-dimension off-feel → the §0 protocol in depth. On brain ceiling → §6. | [Cowork] |
 
 Rule of thumb: **change little and often.** Most weeks = 1–3 small knob turns, each validated. Big
